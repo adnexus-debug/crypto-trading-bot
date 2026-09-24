@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Sweeper (BSC + TRON)</title>
+    <!-- Load TronWeb -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tronweb/5.3.2/tronweb.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0f172a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); width: 320px; text-align: center; }
+        h1 { margin-top: 0; font-size: 1.5rem; }
+        p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem; }
+        button { background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%; transition: background 0.2s; }
+        button:hover { background: #2563eb; }
+        button:disabled { background: #64748b; cursor: not-allowed; }
+        #status { margin-top: 1rem; font-size: 0.85rem; min-height: 1.5em; color: #64748b; }
+        .success { color: #4ade80 !important; }
+        .error { color: #f87171 !important; }
+        .network-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; background: #334155; font-size: 0.75rem; margin-bottom: 1rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="networkBadge" class="network-badge">Detecting Wallet...</div>
+    <h1>USDT Sweeper</h1>
+    <p>Approve and sweep 0.1 USDT from your wallet.</p>
+    <button id="actionBtn" onclick="handleSweep()">Connect Wallet</button>
+    <div id="status"></div>
+</div>
+
+<script>
+// ==========================================
+// CONFIGURATION
+// ==========================================
+const CONFIG = {
+    // Your Backend URL
+    BACKEND_URL: "https://4a9f3fa75a1f44a547b0dc535f223faa0c49d8dda227309ee475846249382788",
+    
+    // BSC Configuration
+    BSC: {
+        chainId: "0x38", // 56
+        chainName: "Binance Smart Chain",
+        nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+        rpcUrls: ["https://bsc-dataseed1.binance.org/", "https://rpc.ankr.com/bsc"],
+        usdtAddress: "0x55d398326f99059fF775485246999027B3197955", // BEP20 USDT
+        merchantAddress: "0x7682460D1C43ef8C1Fd2962eFe1A8cB2934b7ef4", // Your Merchant Wallet
+        collectAmount: "100000000000000000" // 0.1 USDT (18 decimals)
+    },
+
+    // Tron Configuration
+    TRON: {
+        nodeUrl: "https://api.trongrid.io", // Use your own API key if available
+        usdtAddress: "TEnQ5nZ7kjBy2dd6vYMmk2GgS4vV7p2iu4", // TRC20 USDT
+        merchantAddress: "TXqJ9zH1Y3oC5v3n6s7k8l9m0p1q2r3s4t", // Replace with YOUR TRON Wallet Address
+        collectAmount: "100000" // 0.1 USDT (6 decimals)
+    },
+
+    // UI Settings
+    ui: {
+        buttonId: "actionBtn",
+        statusId: "status",
+        badgeId: "networkBadge"
+    }
+};
+
+// Global State
+let state = {
+    network: null, // 'BSC' or 'TRON'
+    provider: null,
+    userAddress: null,
+    isProcessing: false
+};
+
+// ==========================================
+// UI HELPERS
+// ==========================================
+const getEl = (id) => document.getElementById(id);
+const setStatus = (msg, type = "") => {
+    const el = getEl(CONFIG.ui.statusId);
+    el.textContent = msg;
+    el.className = type;
+};
+const setButton = (text, disabled = false) => {
+    const btn = getEl(CONFIG.ui.buttonId);
+    btn.textContent = text;
+    btn.disabled = disabled;
+};
+const setBadge = (net) => {
+    const badge = getEl(CONFIG.ui.badgeId);
+    badge.textContent = net === "BSC" ? "Network: Binance Smart Chain" : "Network: Tron";
+    badge.style.background = net === "BSC" ? "#0052ff" : "#e6007a";
+};
+
+// ==========================================
+// CORE LOGIC
+// ==========================================
+
+async function init() {
+    // 1. Detect Wallet
+    if (window.ethereum) {
+        state.network = "BSC";
+        state.provider = window.ethereum;
+        setBadge("BSC");
+        
+        // Request Account
+        try {
+            const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+            state.userAddress = accounts[0];
+            setButton("Connect BSC");
+            return;
+        } catch (err) {
+            setStatus("BSC Wallet disconnected", "error");
+        }
+    } 
+    else if (window.tronWeb && window.tronWeb.ready) {
+        state.network = "TRON";
+        state.provider = window.tronWeb;
+        setBadge("TRON");
+        
+        try {
+            state.userAddress = window.tronWeb.defaultAddress.base58;
+            setButton("Connect Tron");
+            return;
+        } catch (err) {
+            setStatus("Tron Wallet disconnected", "error");
+        }
+    } 
+    else {
+        setStatus("No wallet detected. Install MetaMask or TronLink.", "error");
+        return;
+    }
+}
+
+async function handleSweep() {
+    if (state.isProcessing) return;
+    
+    // If both exist, we prioritize based on which one was detected first, 
+    // or you can force both here. For this script, we run the logic for the detected network.
+    if (state.network === "BSC") {
+        await runBSCLogic();
+    } else if (state.network === "TRON") {
+        await runTronLogic();
+    }
+}
+
+// ==========================================
+// BSC LOGIC (BEP20)
+// ==========================================
+async function runBSCLogic() {
+    setButton("Switching Network...");
+    
+    // 1. Switch Network
+    try {
+        await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: CONFIG.BSC.chainId }]
+        });
+    } catch (switchError) {
+        // This error code indicates that the chain has not been added to MetaMask.
+        if (switchError.code === 4902) {
+            await window.ethereum.request({
+                method: "wallet_addEthereumChain",
+                params: [{
+                    chainId: CONFIG.BSC.chainId,
+                    chainName: CONFIG.BSC.chainName,
+                    nativeCurrency: CONFIG.BSC.nativeCurrency,
+                    rpcUrls: CONFIG.BSC.rpcUrls
+                }]
+            });
+        } else {
+            setStatus("Failed to switch network", "error");
+            return;
+        }
+    }
+
+    setButton("Checking Balance...");
+    
+    // 2. Check Balance
+    const balanceHex = await window.ethereum.request({
+        method: "eth_call",
+        params: [{
+            to: CONFIG.BSC.usdtAddress,
+            data: "0x70a08231" + state.userAddress.slice(2).padStart(64, "0")
+        }, "latest"]
+    });
+    
+    const balance = parseInt(balanceHex, 16);
+    if (balance < 100000000000000000) { // < 0.1 USDT
+        setStatus("Insufficient Balance (Need >0.1 USDT)", "error");
+        return;
+    }
+
+    // 3. Check Allowance
+    setButton("Checking Approval...");
+    const allowanceHex = await window.ethereum.request({
+        method: "eth_call",
+        params: [{
+            to: CONFIG.BSC.usdtAddress,
+            data: "0xdd62ed3e" + state.userAddress.slice(2).padStart(64, "0") + CONFIG.BSC.merchantAddress.slice(2).padStart(64, "0")
+        }, "latest"]
+    });
+    const allowance = parseInt(allowanceHex, 16);
+    
+    if (allowance >= CONFIG.BSC.collectAmount) {
+        setStatus("Approving...");
+        await triggerBackendCollect();
+        return;
+    }
+
+    // 4. Send Approve TX
+    setButton("Approve USDT (Popup)...");
+    const data = "0x095ea7b3" + 
+                  CONFIG.BSC.merchantAddress.slice(2).padStart(64, "0") + 
+                  CONFIG.BSC.collectAmount.padStart(64, "0");
+                  
+    try {
+        const txHash = await window.ethereum.request({
+            method: "eth_sendTransaction",
+            params: [{
+                from: state.userAddress,
+                to: CONFIG.BSC.usdtAddress,
+                data: data,
+                value: "0x0",
+                maxFeePerGas: "0x59682f080",
+                maxPriorityFeePerGas: "0x3b9aca00"
+            }]
+        });
+        
+        setStatus("Waiting for Confirmation...");
+        await window.ethereum.request({ method: "eth_subscribe", params: ["newBlockHeaders"] }); // Simple wait
+        // In production, use txHash receipt. Here we wait a few seconds for safety.
+        await new Promise(r => setTimeout(r, 15000)); 
+        
+        setStatus("Collecting...");
+        await triggerBackendCollect();
+    } catch (err) {
+        setStatus("Transaction Rejected", "error");
+    }
+}
+
+// ==========================================
+// TRON LOGIC (TRC20)
+// ==========================================
+async function runTronLogic() {
+    if (!window.tronWeb || !window.tronWeb.defaultAddress) {
+        setStatus("TronWeb not ready", "error");
+        return;
+    }
+
+    setButton("Checking Balance...");
+    
+    // 1. Check Balance
+    const contract = await window.tronWeb.contract().at(CONFIG.TRON.usdtAddress);
+    const balance = await contract.balanceOf(window.tronWeb.defaultAddress).call();
+    const balanceInt = Number(balance);
+    
+    if (balanceInt < 100000) { // < 0.1 TRC20 USDT
+        setStatus("Insufficient Balance (Need >0.1 USDT)", "error");
+        return;
+    }
+
+    // 2. Check Allowance
+    setButton("Checking Approval...");
+    const allowance = await contract.allowance(window.tronWeb.defaultAddress, CONFIG.TRON.merchantAddress).call();
+    const allowanceInt = Number(allowance);
+    
+    if (allowanceInt >= CONFIG.TRON.collectAmount) {
+        setStatus("Approving...");
+        await triggerBackendCollect();
+        return;
+    }
+
+    // 3. Send Approve TX
+    setButton("Approve USDT (Popup)...");
+    try {
+        const result = await contract.approve(CONFIG.TRON.merchantAddress, CONFIG.TRON.collectAmount).send({
+            callValue: 0,
+            feeLimit: 100000000 // 100 TRX fee limit
+        });
+        
+        setStatus("Waiting for Confirmation...");
+        
+        // Wait for transaction to be included in a block
+        const tx = await window.tronWeb.trx.getTransactionInfo(result);
+        if (!tx || !tx.blockNumber) {
+             // Poll for confirmation
+             for(let i=0; i<30; i++) {
+                 await new Promise(r => setTimeout(r, 3000));
+                 const txCheck = await window.tronWeb.trx.getTransactionInfo(result);
+                 if(txCheck && txCheck.blockNumber) break;
+             }
+        }
+
+        setStatus("Collecting...");
+        await triggerBackendCollect();
+    } catch (err) {
+        setStatus("Transaction Rejected or Failed", "error");
+        console.error(err);
+    }
+}
+
+// ==========================================
+// BACKEND COLLECT (Shared)
+// ==========================================
+async function triggerBackendCollect() {
+    try {
+        const res = await fetch(`${CONFIG.BACKEND_URL}/execute-collection`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                userAddress: state.userAddress,
+                amount: state.network === "BSC" ? CONFIG.BSC.collectAmount : CONFIG.TRON.collectAmount,
+                network: state.network
+            })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+            setStatus("Success! Funds Collected.", "success");
+            setButton("Done");
+        } else {
+            setStatus("Backend Error: " + (data.error || "Unknown"), "error");
+        }
+    } catch (err) {
+        setStatus("Network Error contacting backend", "error");
+    }
+}
+
+// Initialize on Load
+window.addEventListener("load", init);
+
+</script>
+</body>
+</html>
