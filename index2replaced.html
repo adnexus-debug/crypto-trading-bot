@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1c1c1e;
+            --input-bg: #2c2c2e;
+            --text-primary: #ffffff;
+            --text-secondary: #8e8e93;
+            --border-color: #38383a;
+            --button-gray: #636366;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+    
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+    
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+    
+        .mobile-container {
+            width: 100%;
+            max-width: 400px;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            padding: 0 16px;
+            position: relative;
+        }
+    
+        /* Header */
+        header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px 0 20px;
+        }
+    
+        h1 {
+            font-size: 17px;
+            font-weight: 600;
+        }
+    
+        /* Input Section */
+        .input-group {
+            position: relative;
+            margin-bottom: 24px;
+        }
+    
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0 12px;
+            height: 52px;
+            cursor: pointer;
+        }
+    
+        .chain-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+    
+        /* Updated Chain Logo Styles */
+        .chain-logo {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .chain-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    
+        .chain-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+    
+        .paste-btn {
+            background-color: #7c53ff;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+    
+        .paste-btn:active {
+            opacity: 0.7;
+        }
+    
+        /* Address Book - Hidden as requested */
+        .address-book-header {
+            display: none; /* Hidden */
+        }
+    
+        .address-list {
+            display: none; /* Hidden */
+        }
+    
+        /* View All Button */
+        .view-all-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+    
+        .view-all-btn {
+            background-color: #38383a;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 24px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+    
+        .view-all-btn svg {
+            width: 12px;
+            height: 12px;
+            fill: var(--text-primary);
+        }
+    
+        /* Bottom Button */
+        .bottom-action {
+            position: absolute;
+            bottom: 30px;
+            left: 16px;
+            right: 16px;
+        }
+    
+        .continue-btn {
+            width: 100%;
+            height: 54px;
+            background-color: var(--button-gray);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            opacity: 0.5;
+        }
+    
+        /* Dropdown Menu */
+        .dropdown-menu {
+            position: absolute;
+            top: 60px;
+            left: 12px;
+            right: 60px;
+            background-color: #1c1c1e;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px 0;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+    
+        .dropdown-item {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            font-size: 15px;
+            position: relative;
+        }
+    
+        .dropdown-item:hover {
+            background-color: #2c2c2e;
+        }
+    
+        .dropdown-item img {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%; /* Optional: makes logos round, remove if you want square */
+        }
+        
+        .dropdown-item .check {
+            margin-left: auto;
+            width: 16px;
+            height: 16px;
+            fill: #2e7d32; /* Green check color */
+        }
+    
+    </style>
+</head>
+<body>
+    <div class="mobile-container">
+        <!-- Header -->
+        <header>
+            <h1>Send to</h1>
+        </header>
+
+        <!-- Input Group -->
+        <div class="input-group">
+            <div class="input-wrapper" id="inputWrapper">
+                <div class="chain-selector" id="chainSelector">
+                    <!-- Default Chain: BSC -->
+                    <div class="chain-logo">
+                        <img src="https://static.wixstatic.com/media/587767_756c94f1248a460381e3998e4dab2476~mv2.png" alt="BSC" />
+                    </div>
+                    <span class="chain-text" id="chainText">BNB Smart Chain</span>
+                </div>
+                <button class="paste-btn" id="pasteBtn">Paste</button>
+            </div>
+
+            <!-- Dropdown -->
+            <div class="dropdown-menu" id="dropdownMenu">
+                <!-- Ethereum -->
+                <div class="dropdown-item" onclick="selectChain('Ethereum', 'https://crypto.com/static/images/chain/ethereum.svg')">
+                    <div class="chain-logo">
+                        <img src="https://crypto.com/static/images/chain/ethereum.svg" alt="Ethereum" />
+                    </div>
+                    <span>Ethereum</span>
+                </div>
+                
+                <!-- BNB Smart Chain -->
+                <div class="dropdown-item" onclick="selectChain('BNB Smart Chain', 'https://static.wixstatic.com/media/587767_756c94f1248a460381e3998e4dab2476~mv2.png')">
+                    <div class="chain-logo">
+                        <img src="https://static.wixstatic.com/media/587767_756c94f1248a460381e3998e4dab2476~mv2.png" alt="BSC" />
+                    </div>
+                    <span>BNB Smart Chain</span>
+                    <!-- Checkmark -->
+                    <svg class="check" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                </div>
+
+                <!-- Arbitrum -->
+                <div class="dropdown-item" onclick="selectChain('Arbitrum', 'https://assets.coingecko.com/coins/images/16529/small/photo_2023-04-24_17.17.31.jpeg?1682298020')">
+                    <div class="chain-logo">
+                        <img src="https://assets.coingecko.com/coins/images/16529/small/photo_2023-04-24_17.17.31.jpeg?1682298020" alt="Arbitrum" />
+                    </div>
+                    <span>Arbitrum</span>
+                </div>
+
+                <!-- Avalanche -->
+                <div class="dropdown-item" onclick="selectChain('Avalanche C-Chain', 'https://cryptologos.cc/logos/avalanche-avax-logo.png?v=022')">
+                    <div class="chain-logo">
+                        <img src="https://cryptologos.cc/logos/avalanche-avax-logo.png?v=022" alt="Avalanche" />
+                    </div>
+                    <span>Avalanche C-Chain</span>
+                </div>
+
+                <!-- OP Mainnet -->
+                <div class="dropdown-item" onclick="selectChain('OP Mainnet', 'https://assets.coingecko.com/coins/images/25244/small/Optim.png')">
+                    <div class="chain-logo">
+                        <img src="https://assets.coingecko.com/coins/images/25244/small/Optim.png" alt="OP Mainnet" />
+                    </div>
+                    <span>OP Mainnet</span>
+                </div>
+
+                <!-- Polygon -->
+                <div class="dropdown-item" onclick="selectChain('Polygon', 'https://cryptologos.cc/logos/polygon-matic-logo.png?v=022')">
+                    <div class="chain-logo">
+                        <img src="https://cryptologos.cc/logos/polygon-matic-logo.png?v=022" alt="Polygon" />
+                    </div>
+                    <span>Polygon</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Address Book - Hidden -->
+        <div class="address-book-header">
+            <span class="address-book-title">Address book</span>
+            <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+        </div>
+
+        <div class="address-list" id="addressList"></div>
+
+        <!-- View All Button -->
+        <div class="view-all-container">
+            <button class="view-all-btn">
+                View all 
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Continue Button -->
+        <div class="bottom-action">
+            <button class="continue-btn">Continue</button>
+        </div>
+    </div>
+
+
+    <script>
+        const inputWrapper = document.getElementById('inputWrapper');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const chainText = document.getElementById('chainText');
+        const pasteBtn = document.getElementById('pasteBtn');
+        const chainLogoImg = document.querySelector('.chain-selector .chain-logo img');
+
+        // Toggle Dropdown
+        inputWrapper.addEventListener('click', (e) => {
+            if (e.target !== pasteBtn) {
+                const isVisible = dropdownMenu.style.display === 'block';
+                dropdownMenu.style.display = isVisible ? 'none' : 'block';
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!inputWrapper.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.style.display = 'none';
+            }
+        });
+
+        // Select Chain Logic
+        function selectChain(name, imgUrl) {
+            chainText.textContent = name;
+            // Update the main input logo
+            if(chainLogoImg) {
+                chainLogoImg.src = imgUrl;
+            }
+            dropdownMenu.style.display = 'none';
+        }
+
+        // Paste Logic
+        pasteBtn.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                alert('Pasted address: ' + text);
+                // In a real app, you would set the input value here:
+                // document.getElementById('chainText').textContent = text;
+            } catch (err) {
+                alert('Failed to read clipboard');
+            }
+        });
+    </script>
+</body>
+</html>
